@@ -2,18 +2,13 @@
 
 **Owner:** Masaaki Kato · **Backend:** `server/app/features/f2_record_collection/`
 
-Two-step recording of a load (boat, weight, material, photo of the scale, GPS) that works offline: saved on the phone first and sent when there is signal.
+The current frontend pass is a visual prototype for the three Figma screens. It uses local preview boat data and route state to demonstrate the flow.
 
-| File | Figma screen | Route | Roles | Spec |
-|---|---|---|---|---|
-| `pages/ChooseBoatPage.jsx` | 02 Choose the boat (step 1 of 2) | `/record` | CREW_MEMBER | FR-2.1 |
-| `pages/NewCollectionPage.jsx` | 02 Enter collection & evidence (step 2 of 2) | `/record/details` | CREW_MEMBER | FR-2.2, BR-5 |
-| `pages/CollectionSavedPage.jsx` | 02 Collection saved | `/record/saved` | CREW_MEMBER | FR-2.3 |
-| `pages/SendPage.jsx` | Not drawn in Figma yet (Saved on this phone / Send) | `/send` | CREW_MEMBER | FR-2.4 - FR-2.7 |
+| Screen | Route | Current preview behavior |
+|---|---|---|
+| Choose the boat | `/record` | Search and select a sample active boat |
+| Enter collection & evidence | `/record/details` | Enter weight, material and optional note; preview a scale photo |
+| Collection saved | `/record/saved` | Show a sample record summary and PENDING status |
+| Send saved records | `/send` | Deferred placeholder; this screen is not in the current Figma flow |
 
-Other files: `routes.jsx` (this feature's routes), `api.js` (calls to the backend), `components/` (UI used only by this feature).
-
-Notes:
-
-- `offline/` holds the offline-first code (IndexedDB queue, sync, photo compression, GPS) - see `offline/README.md`.
-- Figma does not show the GPS block, the location-permission message or the "Saved on this phone" states yet.
+This pass does not call the API or persist the record. GPS, offline storage and sync are deferred while the team reviews the screens. Before feature delivery, connect the form to F2 endpoints and implement the remaining system requirements.

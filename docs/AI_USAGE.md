@@ -20,6 +20,7 @@ How to fill a row: what you asked (short prompt summary, no secrets), what you k
 
 | Date | Tool | What I asked | What I used | How I verified |
 |---|---|---|---|---|
+| 2026-11-09 | ChatGPT | Build a first F2 UI preview from the provided Figma screenshots | F2 preview pages with sample boats and route-based preview data; API, GPS and offline behavior deferred | Compared the screens with the supplied Figma frames; frontend lint, build, and browser checks remain to be run by the owner |
 
 ## F3 · Crew home & history (Kaung Khant Paing)
 
