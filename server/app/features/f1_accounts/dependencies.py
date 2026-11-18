@@ -15,7 +15,7 @@ Every other feature uses these to protect its endpoints, for example:
         ...  # user.id, user.name, user.role
 
 `CurrentUser` is a UserOut (id, name, email, username, role, status,
-created_at). It keeps the same attribute names when the users table arrives.
+created_at) read from the users table - it never contains the password.
 """
 
 from typing import Annotated
@@ -23,6 +23,7 @@ from typing import Annotated
 from fastapi import Cookie, Depends, HTTPException, status
 
 from app.core import config
+from app.core.database import SessionDep
 from app.features.f1_accounts import service
 from app.features.f1_accounts.schemas import UserOut
 
@@ -37,19 +38,19 @@ def get_session_id(
 SessionIdDep = Annotated[str | None, Depends(get_session_id)]
 
 
-def get_current_user(session_id: SessionIdDep) -> UserOut:
+def get_current_user(session_id: SessionIdDep, db: SessionDep) -> UserOut:
     """Return the signed-in user, or raise 401 for a missing/expired session.
 
     Also refuses users who are no longer ACTIVE (BR-8) and slides the session
     expiry on every request (FR-1.3) - both handled in service.user_for_session.
     """
-    user = service.user_for_session(session_id) if session_id else None
+    user = service.user_for_session(db, session_id) if session_id else None
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Please sign in again.",
         )
-    return UserOut.model_validate(user)
+    return UserOut.model_validate(user, from_attributes=True)
 
 
 CurrentUser = Annotated[UserOut, Depends(get_current_user)]

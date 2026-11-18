@@ -19,16 +19,17 @@ Endpoints (all under /api):
     POST /admin/users/{user_id}/suspend      ADMIN    FR-1.7  ends all sessions (BR-7)
     POST /admin/users/{user_id}/reactivate   ADMIN    FR-1.7
 
-Data is stored in memory for now (memory_store.py).
+Data is stored in PostgreSQL (tables `users` and `sessions`, see models.py).
+Each endpoint gets one database session per request through SessionDep.
 """
 
 from fastapi import APIRouter, Depends, Response, status
 
 from app.core import config
+from app.core.database import SessionDep
 from app.features.f1_accounts import service
 from app.features.f1_accounts.dependencies import CurrentUser, SessionIdDep, require_role
 from app.features.f1_accounts.schemas import ApproveIn, ChangePasswordIn, LoginIn, RegisterIn, UserOut
-from app.features.f1_accounts.seed import seed_memory_store
 
 router = APIRouter(prefix="/api", tags=["F1 - Accounts & access"])
 
@@ -48,21 +49,21 @@ def set_session_cookie(response: Response, session_id: str) -> None:
 # ---------- /api/auth ----------
 
 @router.post("/auth/register", status_code=status.HTTP_201_CREATED)
-def register(body: RegisterIn) -> UserOut:
-    return service.register(body.name, body.email, body.username, body.password, body.role)
+def register(body: RegisterIn, db: SessionDep) -> UserOut:
+    return service.register(db, body.name, body.email, body.username, body.password, body.role)
 
 
 @router.post("/auth/login")
-def login(body: LoginIn, response: Response) -> UserOut:
-    user = service.authenticate(body.username, body.password)
-    set_session_cookie(response, service.create_session(user["id"]))
+def login(body: LoginIn, response: Response, db: SessionDep) -> UserOut:
+    user = service.authenticate(db, body.username, body.password)
+    set_session_cookie(response, service.create_session(db, user.id))
     return user
 
 
 @router.post("/auth/logout", status_code=status.HTTP_204_NO_CONTENT)
-def logout(session_id: SessionIdDep, response: Response) -> None:
+def logout(session_id: SessionIdDep, response: Response, db: SessionDep) -> None:
     if session_id:
-        service.end_session(session_id)
+        service.end_session(db, session_id)
     response.delete_cookie(config.SESSION_COOKIE_NAME, path="/")
 
 
@@ -72,8 +73,8 @@ def me(user: CurrentUser) -> UserOut:
 
 
 @router.post("/auth/change-password", status_code=status.HTTP_204_NO_CONTENT)
-def change_password(body: ChangePasswordIn, user: CurrentUser) -> None:
-    service.change_password(user.id, body.current_password, body.new_password)
+def change_password(body: ChangePasswordIn, user: CurrentUser, db: SessionDep) -> None:
+    service.change_password(db, user.id, body.current_password, body.new_password)
 
 
 # ---------- /api/admin (ADMIN only, checked once for the whole router) ----------
@@ -82,36 +83,33 @@ admin_router = APIRouter(prefix="/admin", dependencies=[Depends(require_role("AD
 
 
 @admin_router.get("/requests")
-def list_requests() -> list[UserOut]:
-    return service.list_requests()
+def list_requests(db: SessionDep) -> list[UserOut]:
+    return service.list_requests(db)
 
 
 @admin_router.post("/requests/{user_id}/approve")
-def approve_request(user_id: int, body: ApproveIn) -> UserOut:
-    return service.approve(user_id, body.role)
+def approve_request(user_id: int, body: ApproveIn, db: SessionDep) -> UserOut:
+    return service.approve(db, user_id, body.role)
 
 
 @admin_router.post("/requests/{user_id}/reject")
-def reject_request(user_id: int) -> UserOut:
-    return service.reject(user_id)
+def reject_request(user_id: int, db: SessionDep) -> UserOut:
+    return service.reject(db, user_id)
 
 
 @admin_router.get("/users")
-def list_users(search: str = "") -> list[UserOut]:
-    return service.list_users(search)
+def list_users(db: SessionDep, search: str = "") -> list[UserOut]:
+    return service.list_users(db, search)
 
 
 @admin_router.post("/users/{user_id}/suspend")
-def suspend_user(user_id: int, admin: CurrentUser) -> UserOut:
-    return service.suspend(user_id, admin.id)
+def suspend_user(user_id: int, admin: CurrentUser, db: SessionDep) -> UserOut:
+    return service.suspend(db, user_id, admin.id)
 
 
 @admin_router.post("/users/{user_id}/reactivate")
-def reactivate_user(user_id: int) -> UserOut:
-    return service.reactivate(user_id)
+def reactivate_user(user_id: int, db: SessionDep) -> UserOut:
+    return service.reactivate(db, user_id)
 
 
 router.include_router(admin_router)
-
-# No database yet: start every server process with the demo accounts in memory.
-seed_memory_store()

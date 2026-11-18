@@ -19,6 +19,7 @@ from sqlmodel import text
 
 from app.core import config
 from app.core.database import create_db_and_tables, engine
+from app.seed import seed_if_empty
 from app.features.f1_accounts.router import router as f1_accounts_router
 from app.features.f2_record_collection.router import router as f2_record_collection_router
 from app.features.f3_crew_history.router import router as f3_crew_history_router
@@ -28,13 +29,16 @@ from app.features.f5_fleet_boats.router import router as f5_fleet_boats_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # start up: create any missing tables (same approach as the ORM lecture)
+    # start up: create any missing tables (same approach as the ORM lecture),
+    # then add the demo data the first time only (app/seed.py)
     try:
         create_db_and_tables()
+        if seed_if_empty():
+            print("Empty database: demo data added (app/seed.py).")
     except OperationalError:
-        # No database running yet: keep the API up so features that store data
-        # in memory for now (F1) still work. /api/health/db shows the DB status.
-        print("WARNING: database not reachable - starting without it.")
+        # Keep the API up so /api/health still answers; /api/health/db and
+        # every endpoint that reads data will fail until the database runs.
+        print("WARNING: database not reachable - start it with: docker compose up -d database")
     yield
     # shutdown: nothing to clean up yet
 

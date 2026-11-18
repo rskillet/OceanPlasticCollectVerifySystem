@@ -21,7 +21,6 @@ Follows the professor's "Software Deployment on Render" lab (W14). Three Render 
    | `APP_ENV` | `prod` |
    | `COOKIE_SECURE` | `true` |
    | `CORS_ORIGINS` | empty (same origin via the rewrite in step 4) |
-   | `ADMIN_USERNAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | real values for the default admin (FR-1.9) |
 
    Check `https://<backend>.onrender.com/api/health` and `/api/health/db`. Free web services sleep after 15 minutes without traffic and need about a minute to wake up.
 4. **Frontend Static Site** – New → Static Site → this repo, root directory `client`, build `npm ci && npm run build`, publish `dist`. Then **Redirects/Rewrites**, in this order:
@@ -37,14 +36,7 @@ Follows the professor's "Software Deployment on Render" lab (W14). Three Render 
    - Require a pull request before merging, required approvals: 1
    - Require status checks to pass: `backend (pytest)`, `frontend (lint + build)`, `docker (build images)`
    - Optional: Require review from Code Owners (after filling `.github/CODEOWNERS`)
-6. **Seed** – run the seed script once against the Render database from your computer:
-
-   ```bash
-   cd server
-   DATABASE_URL="<External Database URL>" uv run python -m app.seed
-   ```
-
-   (PowerShell: `$env:DATABASE_URL="<External Database URL>"; uv run python -m app.seed`.) Free web services have no shell, so the seed runs from a laptop with the **External** URL.
+6. **Seed** – nothing to do: on its first start the backend creates the tables and adds the default admin and demo data, because the new Render database is empty (`seed_if_empty()` in `app/seed.py`). Later deploys keep the data. Sign in as `admin` and **change the password** on the Profile page before sharing the URL (accounts live in the `users` table, D8).
 
 ## How CD works
 

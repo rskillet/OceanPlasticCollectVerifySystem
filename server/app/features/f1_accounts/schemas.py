@@ -1,7 +1,7 @@
 """Feature 1 - Pydantic request/response models.
 
 Pattern from class: a Base model plus In (request body) and Out (response)
-models. Out models never contain password_hash, so FastAPI filters it out of
+models. Out models never contain the password, so FastAPI filters it out of
 every response (return type / response_model).
 """
 

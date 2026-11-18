@@ -1,18 +1,13 @@
-"""Feature 1 fixtures (own folder, so the shared conftest.py stays untouched)."""
+"""Feature 1 fixtures (own folder, so the shared conftest.py stays untouched).
+
+The shared conftest.py already gives every test a fresh test database with
+the demo users (app/features/f1_accounts/seed.py).
+"""
 
 import pytest
 from fastapi.testclient import TestClient
 
-from app.features.f1_accounts import memory_store
 from app.main import app
-
-
-@pytest.fixture(autouse=True)
-def fresh_accounts():
-    """Every test starts from the seeded demo accounts with no sessions."""
-    memory_store.reset()
-    yield
-    memory_store.reset()
 
 
 @pytest.fixture

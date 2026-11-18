@@ -6,8 +6,8 @@
 // errors into ApiError (err.status, err.detail).
 import { apiFetch } from '../../shared/api/client.js'
 
-// Shows the "demo accounts" hint on the sign-in page. The backend keeps its
-// data in memory with seeded demo users until the database exists.
+// Shows the "demo accounts" hint on the sign-in page (the users seeded into
+// the database on the first start). Set to false before a real launch.
 export const SHOW_DEMO_ACCOUNTS = true
 
 // ---------- /api/auth ----------

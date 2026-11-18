@@ -1,13 +1,16 @@
 """Feature 1 tests - owner: Wongsathorn Sereephap.
 
 NFR-12: one test per endpoint and per business rule. Data comes from the
-in-memory demo accounts (app/features/f1_accounts/seed.py), reset before
-every test. Run: cd server && uv run pytest tests/f1_accounts -vv
+demo accounts in the test database (app/features/f1_accounts/seed.py),
+recreated before every test (tests/conftest.py).
+Run: docker compose exec backend python -m pytest tests/f1_accounts -vv
 """
 
 from fastapi.testclient import TestClient
+from sqlmodel import select
 
 from app.core import config
+from app.features.f1_accounts.models import User, UserSession
 from app.features.f1_accounts.router import router
 from app.main import app
 
@@ -24,16 +27,12 @@ def sign_in(client, username: str, password: str = "password123"):
     return client.post("/api/auth/login", json={"username": username, "password": password})
 
 
-def admin_username() -> str:
-    return (config.ADMIN_USERNAME or "admin").lower()
-
-
-def admin_password() -> str:
-    return config.ADMIN_PASSWORD or "password123"
-
-
 def sign_in_admin(client):
-    return sign_in(client, admin_username(), admin_password())
+    return sign_in(client, "admin")
+
+
+def user_id(db, username: str) -> int:
+    return db.exec(select(User).where(User.username == username)).one().id
 
 
 def test_f1_router_is_importable():
@@ -46,7 +45,7 @@ def test_login_sets_httponly_cookie_and_me_returns_user(f1_client):
     response = sign_in(f1_client, "mreyes")
     assert response.status_code == 200
     assert response.json()["role"] == "CREW_MEMBER"
-    assert "password_hash" not in response.json()
+    assert "password" not in response.json()
     cookie = response.headers["set-cookie"]
     assert config.SESSION_COOKIE_NAME in cookie and "HttpOnly" in cookie
 
@@ -103,10 +102,11 @@ def test_register_rejects_admin_role_and_duplicates(f1_client):
     assert taken.status_code == 409
 
 
-def test_request_can_only_be_handled_once(f1_client):
+def test_request_can_only_be_handled_once(f1_client, db):
     sign_in_admin(f1_client)
-    assert f1_client.post("/api/admin/requests/7/reject").json()["status"] == "REJECTED"
-    assert f1_client.post("/api/admin/requests/7/approve", json={"role": "CREW_MEMBER"}).status_code == 409
+    elena = user_id(db, "evasquez")
+    assert f1_client.post(f"/api/admin/requests/{elena}/reject").json()["status"] == "REJECTED"
+    assert f1_client.post(f"/api/admin/requests/{elena}/approve", json={"role": "CREW_MEMBER"}).status_code == 409
 
 
 # ---------- users (FR-1.7, BR-7) ----------
@@ -119,17 +119,18 @@ def test_admin_lists_and_searches_users(f1_client):
     assert [u["username"] for u in found] == ["mreyes"]
 
 
-def test_suspend_signs_the_user_out(f1_client):
+def test_suspend_signs_the_user_out(f1_client, db):
+    marco = user_id(db, "mreyes")
     crew = sign_in(f1_client, "mreyes")
     crew_cookie = crew.cookies[config.SESSION_COOKIE_NAME]
 
     admin = TestClient(app, base_url="https://testserver")
     sign_in_admin(admin)
-    assert admin.post("/api/admin/users/1/suspend").json()["status"] == "SUSPENDED"
+    assert admin.post(f"/api/admin/users/{marco}/suspend").json()["status"] == "SUSPENDED"
 
     f1_client.cookies.set(config.SESSION_COOKIE_NAME, crew_cookie)
     assert f1_client.get("/api/auth/me").status_code == 401  # BR-7
-    assert admin.post("/api/admin/users/1/reactivate").json()["status"] == "ACTIVE"
+    assert admin.post(f"/api/admin/users/{marco}/reactivate").json()["status"] == "ACTIVE"
 
 
 def test_admin_cannot_suspend_self(f1_client):
@@ -157,3 +158,22 @@ def test_change_password(f1_client):
     f1_client.post("/api/auth/logout")
     assert sign_in(f1_client, "mreyes").status_code == 401
     assert sign_in(f1_client, "mreyes", "brandnew123").status_code == 200
+
+
+# ---------- stored in the database (D8, FR-1.2) ----------
+
+def test_register_is_saved_in_the_users_table(f1_client, db):
+    f1_client.post("/api/auth/register", json=NEW_USER)
+    saved = db.exec(select(User).where(User.username == "nholm")).one()
+    assert saved.status == "PENDING"
+    assert saved.password == NEW_USER["password"]  # plain text by team decision D8
+
+
+def test_session_table_keeps_only_a_hash_of_the_cookie(f1_client, db):
+    cookie = sign_in(f1_client, "mreyes").cookies[config.SESSION_COOKIE_NAME]
+    rows = db.exec(select(UserSession)).all()
+    assert len(rows) == 1
+    assert rows[0].id != cookie
+    f1_client.post("/api/auth/logout")
+    db.expire_all()
+    assert db.exec(select(UserSession)).all() == []

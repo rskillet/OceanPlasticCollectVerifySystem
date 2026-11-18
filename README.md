@@ -8,7 +8,7 @@ Crews record each plastic load (boat, weight, material, a photo of the scale, GP
 
 - Specification: [`docs/requirements/system_requirements.txt`](docs/requirements/system_requirements.txt) (requirement IDs like FR-1.1, BR-2 are used in code, commits and PRs)
 - UI design: [Figma – Verification system flow](https://www.figma.com/design/if70Iuf4DTrCEf8p8hjbiR/Verification-system-flow?node-id=0-1)
-- Team rules: [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) · Deployment: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) · Decisions: [`docs/DECISIONS.md`](docs/DECISIONS.md)
+- Team rules: [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) · Database: [`docs/DATABASE.md`](docs/DATABASE.md) · Deployment: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) · Decisions: [`docs/DECISIONS.md`](docs/DECISIONS.md)
 
 ## Team & ownership
 
@@ -74,10 +74,15 @@ docker compose up --build
 Useful commands:
 
 ```bash
-docker compose exec backend python -m pytest -vv   # backend tests
-docker compose exec backend python -m app.seed     # default admin + demo data
+docker compose exec backend python -m pytest -vv   # backend tests (own test database)
 docker compose down                                # stop (keeps data)
 docker compose down -v                             # stop and wipe the database
+```
+
+The first start creates the tables and adds the demo data (admin + demo users, 4 boats, 32 records with photos). Sign in as `admin` / `password123`. Your data stays when you stop and start again. Details: [`docs/DATABASE.md`](docs/DATABASE.md).
+
+```bash
+docker compose down -v; docker compose up --build  # start again from the demo data (after a model change)
 ```
 
 Faster hot reload on Windows: keep the database in Docker (`docker compose up -d database`) and run the backend (`cd server && uv sync && uv run fastapi dev app/main.py --port 34242`) and the frontend (`cd client && npm install && npm run dev`) directly.
