@@ -30,5 +30,7 @@ class Boat(SQLModel, table=True):
     active: bool = Field(default=True, index=True)  # True = crews can choose it
     created_at: datetime = Field(default_factory=utc_now, sa_type=DateTime(timezone=True))
 
+    # TODO(CHG-003): auto_verify_blocked_until (spot-check rejection blocks auto-verify for 30 days)
+
     # one boat -> many records
     records: list["Record"] = Relationship(back_populates="boat")

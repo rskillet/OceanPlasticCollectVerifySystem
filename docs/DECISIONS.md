@@ -29,6 +29,8 @@ Technical decisions for the ITCS525 project. Rule from the team: use only what I
 
 ## Waiting for a decision
 
+Sponsor change requests CHG-001 – CHG-004 (18 Nov): analysis and technical preparation in [`CHANGE_REQUESTS.md`](CHANGE_REQUESTS.md), waiting for the team's (CCB) decision.
+
 | Topic | Options | Needed by |
 |---|---|---|
 | Atomic status update for the 409 rule (two sponsors deciding at once) | re-check `status == "PENDING"` before commit (taught) vs. conditional `UPDATE ... WHERE status = 'PENDING'` | F4 |

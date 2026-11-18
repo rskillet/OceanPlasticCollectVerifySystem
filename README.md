@@ -8,7 +8,7 @@ Crews record each plastic load (boat, weight, material, a photo of the scale, GP
 
 - Specification: [`docs/requirements/system_requirements.txt`](docs/requirements/system_requirements.txt) (requirement IDs like FR-1.1, BR-2 are used in code, commits and PRs)
 - UI design: [Figma – Verification system flow](https://www.figma.com/design/if70Iuf4DTrCEf8p8hjbiR/Verification-system-flow?node-id=0-1)
-- Team rules: [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) · Database: [`docs/DATABASE.md`](docs/DATABASE.md) · Deployment: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) · Decisions: [`docs/DECISIONS.md`](docs/DECISIONS.md)
+- Team rules: [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md) · Database: [`docs/DATABASE.md`](docs/DATABASE.md) · Change requests: [`docs/CHANGE_REQUESTS.md`](docs/CHANGE_REQUESTS.md) · Deployment: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) · Decisions: [`docs/DECISIONS.md`](docs/DECISIONS.md)
 
 ## Team & ownership
 

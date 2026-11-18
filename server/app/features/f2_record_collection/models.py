@@ -57,6 +57,10 @@ class Record(SQLModel, table=True):
     reason: str | None = Field(default=None, max_length=500)  # required when REJECTED (BR-4)
     created_at: datetime = Field(default_factory=utc_now, sa_type=DateTime(timezone=True))
 
+    # TODO(CHG-003): auto_verified, verified_rule, spot_check columns
+    # TODO(CHG-002/CHG-003): reversed_by, reversed_at, reversal_reason (a VERIFIED record can be reversed)
+    # TODO(CHG-004): record_flags table (DUPLICATE_PHOTO, OUTSIDE_LANDING_SITE) - see docs/CHANGE_REQUESTS.md
+
     # many records -> one boat (record.boat.code, record.boat.name)
     boat: Boat = Relationship(back_populates="records")
 
@@ -67,6 +71,8 @@ class Photo(SQLModel, table=True):
     __tablename__ = "photos"
 
     id: int | None = Field(default=None, primary_key=True)
+    # TODO(CHG-004): two photos per record - add `kind` (PLASTIC | SCALE) and `sha256`,
+    # and make (record_id, kind) unique instead of record_id alone
     record_id: int = Field(foreign_key="records.id", unique=True, index=True)  # one photo per record
     content_type: str = Field(max_length=50)  # e.g. "image/jpeg"
     size_bytes: int
