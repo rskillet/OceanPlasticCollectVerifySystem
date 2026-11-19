@@ -13,6 +13,11 @@ Technical decisions for the ITCS525 project. Rule from the team: use only what I
 | D5 | 2026-11-01 | Tables created with `SQLModel.metadata.create_all` at start-up + seed script; no migration tool | Same as the ORM lecture. |
 | D6 | 2026-11-01 | Photos stored as binary in the database | Render's filesystem is ephemeral; avoids an external storage service not covered in class. |
 | D7 | 2026-11-01 | `postgresql://` URLs are rewritten to `postgresql+psycopg2://` in `app/core/config.py` | SQLAlchemy 2.1 now defaults to the newer psycopg 3 driver; we keep psycopg2-binary from the Render lab. |
+| D8 | 2026-11-18 | **Usernames and passwords are stored in the `users` table, passwords as plain text.** No accounts or passwords in `.env`. | Project lead's decision to keep the course project simple. Replaces NFR-15 (hashing) for this course. The API never returns the password. Change the seeded `admin` password after deploying. |
+| D9 | 2026-11-18 | Photos in a **separate `photos` table** (one row per record), not a column on `records` | List queries on `records` (history, queue, dashboards) never load image bytes, so they stay fast. |
+| D10 | 2026-11-18 | **Thailand time (UTC+7)** for "today / this month / this year"; database stores UTC. Record number = `REC-` + (1000 + id), e.g. `REC-1043` | Operator works in Thailand. Helpers in `app/core/clock.py`; `make_record_number()` in F2 `models.py`. |
+| D11 | 2026-11-18 | The project lead writes **all table models in one shared schema PR** (users, sessions, boats, records, photos) plus the demo seed data; each owner reviews their tables | `records` blocks F3, F4 and F5; one PR avoids waiting and conflicts. |
+| D12 | 2026-11-18 | Demo data is **seeded automatically once**, when the database is empty; data persists in the Docker volume. Tests use their own `<db>_test` database. SQL aggregates (`func.sum`, `group_by`) only where plain `select` + Python is not enough | Data survives restarts (Lab 12 check "backend restart keeps history"); tests never wipe demo data; stay with what was taught where possible. |
 
 ### Switching to MySQL later (D1)
 
@@ -24,13 +29,11 @@ Technical decisions for the ITCS525 project. Rule from the team: use only what I
 
 ## Waiting for a decision
 
+Sponsor change requests CHG-001 – CHG-004 (18 Nov): analysis and technical preparation in [`CHANGE_REQUESTS.md`](CHANGE_REQUESTS.md), waiting for the team's (CCB) decision.
+
 | Topic | Options | Needed by |
 |---|---|---|
-| Password hashing library (NFR-15 asks for bcrypt/argon2 – not taught) | `bcrypt` / `pwdlib[argon2]` / stdlib `hashlib.scrypt` | F1, week 1 |
-| Photo table | separate `photos` table (5 tables) vs. column on `records` (4 tables) | F2, week 1 |
-| Timezone for "today / this month / this year" totals | operator local time (which zone?) vs. UTC | F3, F5 |
-| Record number format | e.g. `REC-1043` derived from the id | F2 |
-| SQL aggregates (`func.sum`, `group_by`) and atomic status update for the 409 rule | allow (part of SQLModel/SQLAlchemy) vs. compute in Python | F3, F4, F5 |
+| Atomic status update for the 409 rule (two sponsors deciding at once) | re-check `status == "PENDING"` before commit (taught) vs. conditional `UPDATE ... WHERE status = 'PENDING'` | F4 |
 | End-to-end test tool (NFR-12) | Playwright/Cypress (not taught) vs. TestClient flow tests + manual checklist | week 4 |
 | Map on the record screen | coordinates + link to a map vs. map library (not taught) | F3 |
 | Icons | inline SVG copied from Figma vs. icon library (not taught) | all |

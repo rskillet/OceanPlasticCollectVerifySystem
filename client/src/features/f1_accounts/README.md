@@ -4,7 +4,7 @@
 
 Sign in, request an account, admin approval, user management and the profile page. Also provides the signed-in user (`AuthProvider` / `AuthContext`) for every other feature.
 
-**Status:** all six screens are built and follow Figma. They run on **mock data** (`mockAccounts.js`) because the backend endpoints do not exist yet.
+**Status:** all six screens are built, follow Figma and talk to the real F1 backend (`/api/auth/*`, `/api/admin/*`). The backend stores the accounts in PostgreSQL, seeded with demo accounts on the first start.
 
 | File | Figma screen | Route | Roles | Spec |
 |---|---|---|---|---|
@@ -20,26 +20,29 @@ Sign in, request an account, admin approval, user management and the profile pag
 | File | Purpose |
 |---|---|
 | `routes.jsx` | This feature's routes (`App.jsx` picks them up) |
-| `api.js` | The only place the pages get data from. Each function names the real endpoint it will call |
-| `mockAccounts.js` | **Temporary** in-memory backend with the same rules and `{detail}` errors as the planned API |
+| `api.js` | The only place the pages get data from. Each function calls one backend endpoint with the shared `apiFetch` |
 | `authContext.js`, `AuthProvider.jsx` | Signed-in user for the whole app (wrapped around `<App />` in `src/main.jsx`) |
 | `constants.js` | Registration roles (no ADMIN, BR-9), each role's home page, minimum password length |
 | `utils.js` | Initials, "2 hours ago", "March 2026" (built-in `Intl`, no library) |
 | `components/` | F1 UI pieces in the Figma style: `AuthLayout`, `BrandMark`, `Button`, `TextField`, `SelectField`, `Avatar`, `AccountStatusBadge`, `PageHeader`, `InfoBanner`, `Alert`, `RequestCard`, the two dialogs, inline SVG `icons.jsx` |
 
-## Try it (mock mode)
+## Try it
 
-`npm run dev`, open http://localhost:5173/signin. Password for every demo account: `password123`.
+From the repository root: `docker compose up --build`, then open http://localhost:5173/signin. API docs: http://localhost:34242/docs.
+
+Password for every demo account: `password123`.
 
 | Username | Role | Lands on |
 |---|---|---|
 | `mreyes` | Crew member | `/home` |
 | `smendes` | Sponsor / Management | `/fleet` |
-| `aosei` | Administrator | `/admin/requests` |
+| `admin` | Administrator | `/admin/requests` |
 | `tiversen` | Crew member, **suspended** | cannot sign in (BR-8) |
 | `evasquez` | Crew member, **pending** | cannot sign in until approved |
 
-Full flow (AC-1): create an account → it cannot sign in yet → sign in as `aosei`, approve it on Requests (optionally change the role) → log out → sign in as the new account. Mock data lives in memory: use the side navigation, not the browser refresh, or everything resets.
+Full flow (AC-1): create an account → it cannot sign in yet → sign in as `admin`, approve it on Requests (optionally change the role) → log out → sign in as the new account. The data is kept in the database volume when you restart; `docker compose down -v` resets it to the demo data.
+
+Running the backend with plain `uv run` (no `.env`) makes the cookie `Secure`. Chrome, Edge and Firefox accept that on `http://localhost`; if your browser does not keep you signed in, set `COOKIE_SECURE=false` in the environment.
 
 ## For other features
 
@@ -50,14 +53,11 @@ import { AuthContext } from '../f1_accounts/authContext.js'
 const { user } = useContext(AuthContext) // null when nobody is signed in; user.name, user.role, ...
 ```
 
-## Connecting the backend later
+## Demo accounts hint
 
-1. In `api.js`, replace each function body with the `apiFetch(...)` call written in its comment.
-2. Set `USING_MOCK_DATA = false`, then delete `mockAccounts.js` and `components/MockAccountsHint.jsx`.
-3. Nothing else changes: `AuthProvider` already asks `GET /api/auth/me` on start, and the pages already show the backend's `detail` messages.
+`components/MockAccountsHint.jsx` lists the seeded demo accounts on the sign-in page. Set `SHOW_DEMO_ACCOUNTS = false` in `api.js` before a real launch.
 
 ## Still to do for F1 (shared files - agree with the team first)
 
 - `shared/layout/AppLayout.jsx`: show only the signed-in user's menu, their name/role and a log-out button (currently the template shows all three menus).
 - `App.jsx`: guard signed-in routes with each route's `roles`, and send `/` to the user's home (`ROLE_HOME`).
-- Backend endpoints in `server/app/features/f1_accounts/`.

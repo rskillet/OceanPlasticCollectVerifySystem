@@ -39,7 +39,6 @@ SESSION_COOKIE_NAME = os.getenv("SESSION_COOKIE_NAME", "ocean_session")
 SESSION_TTL_DAYS = int(os.getenv("SESSION_TTL_DAYS", "7"))
 COOKIE_SECURE = _as_bool(os.getenv("COOKIE_SECURE", "true"))
 
-# Default admin created by the seed script (FR-1.9)
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "")
-ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "")
+# Time zone for "today / this month / this year": Thailand (app/core/clock.py).
+# Accounts and passwords live in the users table (seeded on first start),
+# not in environment variables (team decision D8).
